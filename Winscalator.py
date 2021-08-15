@@ -202,8 +202,7 @@ def calculate_last_3m_updates(output_file):
 def print_integrity_level(level, high):
     if level == high:
         print(formatting.red_b('[!] Your user\s process integrity level is: %s ' % level.upper()))
-        print(formatting.red_b('    You have SYSTEM privileges NOW!'))
-        exit_program()
+        print(formatting.red_b('    You should have SYSTEM privileges NOW for this context!'))
     else:
         print (formatting.yellow_b("[+] Your user\s process integrity level is: %s" % level.upper()))
 
@@ -768,6 +767,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
             '[+] hostame and OS Version have been stored...'))
         print()
+        enter_to_continue()
     if type == "wmicsysinfo"and not isinstance(sysinfo_data, SystemInfo):
         print()
         print(formatting.yellow(
@@ -777,6 +777,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
             '[+] System info structure has been stored...'))
         print()
+        enter_to_continue()
     if type == "sysinfo" and not isinstance(sysinfo_data, SystemInfo):
         print()
         print(formatting.yellow(
@@ -786,6 +787,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
             '[+] System info structure has been stored...'))
         print()
+        enter_to_continue()
     if (type == "patchedrecently"):
         print()
         print(formatting.yellow(
@@ -793,6 +795,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print()
         calculate_last_3m_updates(absolute_path)
         print()
+        enter_to_continue()
     if (type == "username"):
         print()
         print(formatting.yellow(
@@ -803,6 +806,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
             '[+] All the compromised User\'s info has been stored...'))
         print()
+        enter_to_continue()
     if (type == "groups"):
         print()
         print(formatting.yellow(
