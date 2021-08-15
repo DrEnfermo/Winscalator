@@ -197,8 +197,6 @@ def calculate_last_3m_updates(output_file):
                 '    Try to download and execute a WINDOWS EXPLOITS SUGGESTER TOOL like WES-NG from: \n'))
             print(formatting.cyan(' %s' % str(wsparser.get('tools', 'wesng')[0:128])))
 
-        enter_to_continue()
-
 def print_integrity_level(level, high):
     if level == high:
         print(formatting.red_b('[!] Your user\s process integrity level is: %s ' % level.upper()))
@@ -866,7 +864,12 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                 print(formatting.red_b('\n       > USAGE: akagi.exe|akagi64.exe <key>  (consult keys on github page)\n'))
                 print(formatting.red_b('\n  - 2) Try to execute metasploit module') + formatting.cyan_b('"exploit/windows/local/bypassuac"'))
                 print(formatting.red_b('         with any of its submodules (bypassuac_eventvwr, bypass_fodhelper, bypass_injection...)\n'))
-                enter_to_continue()
+            else:
+                print(formatting.yellow('[+] No conditions to UAC ByPass execution... Not exploitable\n'))
+        else:
+            print(formatting.yellow('[+] No conditions to UAC ByPass execution. Not exploitatble...\n'))
+
+        enter_to_continue()
         print()
     if (type == "privs"):
         print()
@@ -878,8 +881,8 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
             '[+] All the User\'s privileges have been stored...'))
         print()
         #Check if potato attacks could be addressed into the system...
-        if check_potatoes():
-            enter_to_continue()
+        check_potatoes()
+        enter_to_continue()
         print()
     if (type == "alwaysinstallelevated"):
         print()
@@ -908,6 +911,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
                 '[+] AlwaysInstallElevated configuration processed...'))
         print()
+        enter_to_continue()
     if (type == "startuppermissions"):
 
         print()
@@ -950,8 +954,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                             '    [*] Following paths have READ PERMISSIONS:'))
                         userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
                         print()
-            #TODO: ENTER TO CONTINUE...
-            enter_to_continue()
+        enter_to_continue()
         print()
     if (type == "credentialmanagerpass"):
         print()
@@ -970,7 +973,11 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
             print(formatting.red_b('    IF YOU HAVE THE PASSWORD BY THIS WAY, YOU COULD USE:'))
             print(formatting.cyan_b('        runas /savecred /user:<user> <shell>'))
             enter_to_continue()
+        else:
+            print(formatting.yellow('[*]  Credential Manager Passwords not found (not exploitable)...'))
+            
         print()
+        enter_to_continue()
     if (type == "winlogonpass"):
         #TODO: complete
         print()
@@ -980,6 +987,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         if not found:
             print(formatting.yellow(
             '   [*] Autologon password not found (not exploitable)...'))
+        
         print(formatting.yellow(
             '[+] Autologon credentials processed...'))
         print()
@@ -992,8 +1000,8 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
             print(formatting.red_b('[!!!] Found WinLogon cache Default Password: %s' % defpass))
             print_ways_to_connect_with_new_credentials()
 
-        if (len(defuname)!=0 and len(defpass) != 0):
-            enter_to_continue()
+        # if (len(defuname)!=0 and len(defpass) != 0):
+        enter_to_continue()
 
         print()
     if (type == 'registrypass'):
@@ -1034,9 +1042,13 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
             print(formatting.red_b("[!] Following credentials were retrieved from target system:"))
             sysinfo_data.print_wificredentials()
             print(formatting.red_b('   ONE OF THEM COULD BE USED FOR LATERAL MOVEMENTS OR THE PASSWORDS'))
-            print(formatting.red_b('   COULD BE REUSED FOR ESCALATION INTO THIS TARGET OR OTHER TARGETS IN NETWORK.'))
-            enter_to_continue()
+            print(formatting.red_b('   COULD BE REUSED FOR ESCALATION INTO THIS TARGET OR OTHER TARGETS IN NETWORK.\n'))
+        else:
+            print(formatting.yellow('[*] No credentials found (not exploitable)...\n'))
+        
         print()
+        enter_to_continue()
+
     if (type == "secfilespermissions"):
         print()
         print(formatting.yellow(
@@ -1060,7 +1072,8 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
 
                     userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
                     print()
-            enter_to_continue()
+        
+        enter_to_continue()
         print()
     if (type == "extfilespermissions"):
         print()
@@ -1104,8 +1117,11 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                             '[*] Following paths have READ PERMISSIONS:'))
                         userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
                         print()
-                enter_to_continue()
-        print()
+        else:
+            print(formatting.yellow('[*] No paths found...\n'))
+        
+        enter_to_continue()
+        
     if (type == "targetusers"):
         print()
         print(formatting.yellow(
@@ -1116,6 +1132,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         print(formatting.yellow(
             '[+] All the Active users info in the target system have been stored...'))
         print()
+        enter_to_continue()
     if (type == "services"):
         print()
         print(formatting.yellow(
@@ -1140,7 +1157,9 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
             print(formatting.red_b('   craft a malicious program in one of them, to execute with this'))
             print(formatting.red_b('   service\'s privileges.'))
             print(formatting.red_b ('   You could also use Metasploit Module: ') + formatting.cyan_b('exploit/windows/local/unquoted/service_path'))
-
+        else:
+             print(formatting.yellow('[*] NO Services with spaces in their non quottation paths were found (not exploitable)...\n'))           
+        
         print()
         enter_to_continue()
     if (type == "servicespermissions"):
@@ -1151,7 +1170,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         sysinfo_data.print_svcpermissions()
 
         print(formatting.yellow(
-            '[+] All the services executables permissions in the target system have been stored...'))
+            '[+] All the services executables permissions in the target system have been stored. Check them, please...'))
         print()
         enter_to_continue()
     if (type == "nonuserprocesses"):
@@ -1173,7 +1192,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         sysinfo_data.print_schtasks()
 
         print(formatting.yellow(
-            '[+] All the non Microsoft\'s Scheduled Tasks in the target system have been stored...'))
+            '[+] All the non Microsoft\'s Scheduled Tasks in the target system have been stored. Check them, please..'))
         print()
         enter_to_continue()
 
