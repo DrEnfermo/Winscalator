@@ -625,7 +625,7 @@ def print_autologon_credentials(outputfile):
 def print_ways_to_connect_with_new_credentials():
     print()
     print(formatting.red_b('      WE COULD TRY SOME WAYS TO CONNECT WITH THE RETRIEVED USER AND PASSWORD:'))
-    print(formatting.red_b('\n      WAY 1: winexe tool :') + formatting.cyan_b('winexe -U \'<user>@<password>\' <target_machine> cmd.exe'))
+    print(formatting.red_b('\n      WAY 1: winexe tool :') + formatting.cyan_b('winexe -U \'<user>%<password>\' //<target_machine> <command>'))
     print(formatting.red_b('      WAY 2: PowerUp.ps1 script (Powerexploit tools):') + formatting.cyan_b('method Get-RegistryAutoLogon'))
     print(formatting.red_b('      WAY 3: Metasploit module :') + formatting.cyan_b('post/windows/gather/credentials/windows_autologin'))
     print(formatting.red_b('      WAY 4: Crackmapexec :') + formatting.cyan_b('crackmapexec.py smb <target_machine> -u <user> -p <password>'))

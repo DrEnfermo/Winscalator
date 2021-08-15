@@ -231,9 +231,8 @@ class UserInfo:
                                 found = True
 
                         # If user is a local administrator and this group has Full access, Modify access or Write access of any kind to this file path...
-
+                        local_admin_users = config_locale_section['local_admin_group'].upper()
                         if isinstance(self.is_admin, bool) and self.is_admin :
-                            local_admin_users = config_locale_section['local_admin_group'].upper()
                             # print(local_admin_users)
                             if local_admin_users == str(perm.split(':')[0]).upper():
                                 if 'F' in perm.split(':')[1] or 'W' in perm.split(':')[1] or 'M' in perm.split(':')[1]:
