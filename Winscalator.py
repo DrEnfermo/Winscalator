@@ -606,7 +606,7 @@ def print_autologon_credentials(outputfile):
             for i in range(0, len(lines)):
                 row = lines[i]
                 if len(row) > 1 :
-                    parts = str(row()).strip().split(' ')
+                    parts = str(row).strip().split(' ')
                     print(parts[2])
                     if 'defaultdomainname' in row.lower():
                         defdomainname = parts[2]
