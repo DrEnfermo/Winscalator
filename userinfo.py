@@ -199,6 +199,9 @@ class UserInfo:
             lista = self.pathextfiles
 
         print()
+        group_everyone = config_locale_section['everyone_group'].upper()
+        local_users = config_locale_section['local_users_group'].upper()
+        local_admin_users = config_locale_section['local_admin_group'].upper()
         for path in lista:
             anywriteperm = False
             if isinstance(path, PathInfo):
@@ -211,7 +214,7 @@ class UserInfo:
                         found = False
 
                         # Group Everyone has Full access, Modify access or Write access of any kind to this file path...
-                        group_everyone = config_locale_section['everyone_group'].upper()
+                     
                         # print(group_everyone)
                         if group_everyone == str(perm.split(':')[0]).upper():
                             if 'F' in perm.split(':')[1] or 'W' in perm.split(':')[1] or 'M' in perm.split(':')[1]:
@@ -221,7 +224,7 @@ class UserInfo:
                                 found = True
 
                         # Local Users group has Full access, Modify access or Write access of any kind to this file path...
-                        local_users = config_locale_section['local_users_group'].upper()
+                        
                         # print(local_users)
                         if local_users == str(perm.split(':')[0]).upper():
                             if 'F' in perm.split(':')[1] or 'W' in perm.split(':')[1] or 'M' in perm.split(':')[1]:
@@ -231,7 +234,7 @@ class UserInfo:
                                 found = True
 
                         # If user is a local administrator and this group has Full access, Modify access or Write access of any kind to this file path...
-                        local_admin_users = config_locale_section['local_admin_group'].upper()
+                        
                         if isinstance(self.is_admin, bool) and self.is_admin :
                             # print(local_admin_users)
                             if local_admin_users == str(perm.split(':')[0]).upper():
@@ -288,6 +291,9 @@ class UserInfo:
         for path in lista:
             anyreadperm = False
 
+            group_everyone = config_locale_section['everyone_group'].upper()
+            local_users = config_locale_section['local_users_group'].upper()
+            local_admin_users = config_locale_section['local_admin_group'].upper()
             if isinstance(path, PathInfo):
             # print(path.pathName)
                 res = [f for f in ("SAM","SYSTEM","SECURITY") if(f in path.pathName.upper())]
@@ -300,7 +306,7 @@ class UserInfo:
                         found = False
 
                         # Group Everyone has Full access, Modify access or Write access of any kind to this file path...
-                        group_everyone = config_locale_section['everyone_group'].upper()
+                       
                         # print(group_everyone)
                         if group_everyone == str(perm.split(':')[0]).upper():
                             # if 'F' in perm.split(':')[1] or 'R' in perm.split(':')[1]:
@@ -316,7 +322,7 @@ class UserInfo:
                                 found = True
 
                         # Local Users group has Full access, Modify access or Write access of any kind to this file path...
-                        local_users = config_locale_section['local_users_group'].upper()
+
                         # print(local_users)
                         if local_users == str(perm.split(':')[0]).upper():
                             # if 'F' in perm.split(':')[1] or 'R' in perm.split(':')[1]:
@@ -333,7 +339,7 @@ class UserInfo:
 
                         # If user is a local administrator and this group has Full access, Modify access or Write access of any kind to this file path...
                         if isinstance(self.is_admin, bool) and self.is_admin:
-                            local_admin_users = config_locale_section['local_admin_group'].upper()
+
                             # print(local_admin_users)
                             if local_admin_users == str(perm.split(':')[0]).upper():
                                 # if 'F' in perm.split(':')[1] or 'R' in perm.split(':')[1]:
