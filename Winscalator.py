@@ -607,17 +607,16 @@ def print_autologon_credentials(outputfile):
                 row = lines[i]
                 if len(row) > 1 :
                     parts = str(row).strip().split(' ')
-                    print(parts[-1:])
                     if 'defaultdomainname' in row.lower():
-                        defdomainname = parts[-1:]
+                        defdomainname = str(parts[-1:])
                         print('DefaultDomainName: %s' % defdomainname)
                         continue
                     if 'defaultusername' in row.lower():
-                        defusername = parts[-1:]
+                        defusername = str(parts[-1:])
                         print('DefaultUserName: %s' % defusername)
                         continue
                     if 'defaultPassword' in row.lower():
-                        defpassword = parts[-1:]
+                        defpassword = str(parts[-1:])
                         print('DefaultPassword: %s' % defpassword)
                         found=True
                         continue
