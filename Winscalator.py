@@ -200,7 +200,7 @@ def calculate_last_3m_updates(output_file):
 def print_integrity_level(level, high):
     if level == high:
         print(formatting.red_b('[!] Your user\s process integrity level is: %s ' % level.upper()))
-        print(formatting.red_b('    You should have SYSTEM privileges NOW for this context!'))
+        print(formatting.red_b('    Administrators are granted the High Integrity Level!'))
     else:
         print (formatting.yellow_b("[+] Your user\s process integrity level is: %s" % level.upper()))
 
