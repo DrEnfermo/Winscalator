@@ -88,15 +88,14 @@ the project's folder (within the application directory).
 
 ### Usage's video
 
-#### WINSCALATOR VIDEO DEMO (1):
+#### WINSCALATOR VIDEO DEMO (1)
 
 https://user-images.githubusercontent.com/43007145/131536979-a862094e-6bd9-423e-89a7-8e1b07bebd73.mp4
 
-#### WINSCALATOR VIDEO DEMO (2):
+#### WINSCALATOR VIDEO DEMO (2)
 
 https://user-images.githubusercontent.com/43007145/131537788-a8fb9a2e-6e8d-4bfc-98bb-7c82694faf7b.mp4
 
-#### WINSCALATOR VIDEO DEMO (3):
+#### WINSCALATOR VIDEO DEMO (3)
 
 https://user-images.githubusercontent.com/43007145/131539588-1fb1c805-1a1b-4cb6-98b0-e24f100e8c71.mp4
-
