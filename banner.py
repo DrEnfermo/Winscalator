@@ -26,7 +26,9 @@ class Banner:
         self.bannertext += formatting.green_b(filename)
         self.bannertext += formatting.green_b(' <PROJECT_NAME> [-t]')
         self.bannertext += formatting.yellow('\'                   [*]\n')
-        self.bannertext += formatting.green_b('                          -t: Target machine is where assistant is running.')
+        self.bannertext += formatting.green_b('                          -t: Target machine is where assistant is running.\n')
+        self.bannertext += formatting.yellow('[*]                       (CTRL + C to EXIT PROGRAM) ')
+        self.bannertext += formatting.yellow('                           [*]\n')
 
         # banner to display...
         self.banner = '\n\n'
